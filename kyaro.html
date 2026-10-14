@@ -1,0 +1,1338 @@
+<!DOCTYPE html>
+<html lang="id" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KYARO Dimsum & Drink — POS & Kasir Pintar</title>
+  
+  <!-- Fonts: Plus Jakarta Sans & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Font Awesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              dark: '#0c0d0e',
+              surface: '#151719',
+              card: '#1b1e22',
+              border: '#282c34',
+              red: '#dc2626',
+              redDark: '#991b1b',
+              orange: '#ea580c',
+              gold: '#f59e0b',
+              matcha: '#059669',
+              coffee: '#78350f',
+              cream: '#f8fafc'
+            }
+          },
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace']
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* iOS Momentum Scrolling */
+    html {
+      -webkit-overflow-scrolling: touch;
+      background-color: #0c0d0e;
+      color: #f8fafc;
+    }
+
+    /* Custom Glassmorphism */
+    .glass-header {
+      background: rgba(12, 13, 14, 0.82);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .glass-panel {
+      background: rgba(22, 25, 29, 0.75);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 1px solid rgba(255, 255, 255, 0.07);
+      transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .glass-panel:hover {
+      border-color: rgba(220, 38, 38, 0.35);
+      box-shadow: 0 15px 35px -10px rgba(220, 38, 38, 0.15);
+    }
+
+    /* Reversible iOS-style Spring Scroll Animation */
+    .ios-scroll-item {
+      opacity: 0;
+      transform: translateY(28px) scale(0.98);
+      transition: opacity 0.75s cubic-bezier(0.16, 1, 0.3, 1),
+                  transform 0.75s cubic-bezier(0.16, 1, 0.3, 1);
+      will-change: opacity, transform;
+    }
+
+    .ios-scroll-item.is-visible {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #111315;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #2a2e35;
+      border-radius: 999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #dc2626;
+    }
+
+    /* 80mm Receipt Styles */
+    @media print {
+      body * {
+        visibility: hidden !important;
+      }
+      #printableThermalReceipt, #printableThermalReceipt * {
+        visibility: visible !important;
+      }
+      #printableThermalReceipt {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 80mm !important;
+        margin: 0 !important;
+        padding: 4mm !important;
+        background: #ffffff !important;
+        color: #000000 !important;
+        font-family: 'JetBrains Mono', monospace !important;
+        font-size: 11pt !important;
+      }
+    }
+  </style>
+</head>
+<body class="selection:bg-brand-red selection:text-white font-sans antialiased overflow-x-hidden min-h-screen">
+
+  <!-- ═══ TOP NAVBAR (GLASSMORPHISM) ═══ -->
+  <header class="sticky top-0 z-50 glass-header px-6 py-3 transition-all duration-300">
+    <div class="max-w-[1680px] mx-auto flex flex-wrap items-center justify-between gap-4">
+      
+      <!-- Logo & Brand -->
+      <div class="flex items-center gap-3 cursor-pointer" onclick="switchTab('pos')">
+        <div class="w-11 h-11 rounded-2xl bg-gradient-to-tr from-brand-red to-brand-orange flex items-center justify-center text-white shadow-lg shadow-brand-red/30 border border-white/20">
+          <span class="font-extrabold text-xl font-mono">K</span>
+        </div>
+        <div>
+          <h1 class="text-lg font-bold tracking-tight text-white flex items-center gap-2">
+            KYARO <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-brand-red/20 text-brand-orange border border-brand-orange/30">DIMSUM & DRINK</span>
+          </h1>
+          <p class="text-xs text-gray-400">Point of Sale & Kasir Pintar Modern</p>
+        </div>
+      </div>
+
+      <!-- Navigation Tabs -->
+      <nav class="flex items-center gap-1.5 p-1 rounded-full bg-brand-surface border border-white/5">
+        <button type="button" onclick="switchTab('pos')" id="tabBtn-pos" class="nav-tab-btn active px-5 py-2 rounded-full text-xs font-bold transition-all flex items-center gap-2 bg-brand-red text-white shadow-md">
+          <i class="fa-solid fa-cash-register"></i>
+          <span>Kasir & Menu</span>
+        </button>
+        <button type="button" onclick="switchTab('reports')" id="tabBtn-reports" class="nav-tab-btn px-5 py-2 rounded-full text-xs font-bold transition-all flex items-center gap-2 text-gray-400 hover:text-white">
+          <i class="fa-solid fa-chart-line"></i>
+          <span>Data Laporan</span>
+          <span class="px-2 py-0.5 text-[10px] rounded-full bg-brand-orange text-white font-extrabold" id="navReportBadge">0</span>
+        </button>
+        <button type="button" onclick="switchTab('admin-notes')" id="tabBtn-notes" class="nav-tab-btn px-5 py-2 rounded-full text-xs font-bold transition-all flex items-center gap-2 text-gray-400 hover:text-white">
+          <i class="fa-solid fa-clipboard-list"></i>
+          <span>Catatan Admin</span>
+        </button>
+      </nav>
+
+      <!-- Right Meta Info: Clock, Audio, Cashier Shift -->
+      <div class="flex items-center gap-4">
+        <div class="hidden sm:flex flex-col text-right font-mono text-xs border-r border-white/10 pr-4">
+          <span class="font-bold text-gray-200" id="liveDateText">01 Okt 2026</span>
+          <span class="text-brand-orange font-semibold" id="liveTimeText">21:15:00 WIB</span>
+        </div>
+
+        <button type="button" id="soundToggleBtn" class="w-9 h-9 rounded-xl glass-panel flex items-center justify-center text-gray-300 hover:text-brand-red transition-all" title="Toggle Suara">
+          <i class="fa-solid fa-volume-high text-sm" id="soundIconOn"></i>
+          <i class="fa-solid fa-volume-xmark text-sm hidden" id="soundIconOff"></i>
+        </button>
+
+        <div class="flex items-center gap-3 pl-2">
+          <div class="relative w-9 h-9 rounded-full bg-brand-red/20 border border-brand-red/40 flex items-center justify-center text-brand-red">
+            <i class="fa-solid fa-user-tie text-sm"></i>
+            <span class="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-500 border-2 border-brand-dark"></span>
+          </div>
+          <div class="hidden md:flex flex-col">
+            <span class="text-xs font-bold text-white leading-tight">Admin Kasir</span>
+            <span class="text-[11px] text-gray-400">Shift 1 • Tasikmalaya</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- ═══ MAIN APP VIEWS CONTAINER ═══ -->
+  <main class="max-w-[1680px] mx-auto p-4 sm:p-6">
+    
+    <!-- ═══════════════════════════════════════════ -->
+    <!-- VIEW 1: POS & KASIR (CATALOG + CART)        -->
+    <!-- ═══════════════════════════════════════════ -->
+    <div id="viewPos" class="view-panel block">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        
+        <!-- LEFT: CATALOG (8 COLS) -->
+        <div class="lg:col-span-8 space-y-6">
+          
+          <!-- Promo Banner (Modern Red & Gold) -->
+          <div class="ios-scroll-item relative overflow-hidden rounded-3xl p-6 sm:p-8 bg-gradient-to-r from-brand-redDark via-brand-red to-brand-orange border border-white/20 shadow-2xl flex flex-col sm:flex-row items-center justify-between gap-6">
+            <div class="space-y-3 z-10 max-w-xl">
+              <span class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-black/30 backdrop-blur-md text-amber-300 text-xs font-bold border border-white/10">
+                <i class="fa-solid fa-fire text-brand-gold"></i> SPESIAL HARI INI
+              </span>
+              <h2 class="text-2xl sm:text-3xl font-extrabold text-white leading-tight">
+                Dimsum Mentai Gurih & Hot Lava Pedas Nampol
+              </h2>
+              <p class="text-xs sm:text-sm text-white/80 font-light leading-relaxed">
+                Dibuat dari daging ayam udang pilihan segar setiap hari dengan racikan saus torched otentik.
+              </p>
+              <div class="flex flex-wrap gap-2 pt-1">
+                <button onclick="filterCategory('dimsum-mentai')" class="px-3.5 py-1.5 rounded-full bg-amber-400 text-amber-950 font-bold text-xs flex items-center gap-1.5 shadow-md hover:scale-105 transition-transform">
+                  <span class="w-4 h-4 rounded bg-brand-red text-white flex items-center justify-center text-[10px]">K</span> Mentai Series
+                </button>
+                <button onclick="filterCategory('dimsum-hot-lava')" class="px-3.5 py-1.5 rounded-full bg-red-900 text-red-100 font-bold text-xs flex items-center gap-1.5 shadow-md hover:scale-105 transition-transform border border-red-700">
+                  🌶️ Hot Lava Series
+                </button>
+              </div>
+            </div>
+
+            <!-- Visual Badge -->
+            <div class="hidden sm:flex items-center gap-3 z-10">
+              <div class="w-28 h-28 rounded-2xl glass-panel p-2 flex flex-col items-center justify-center text-center shadow-xl">
+                <i class="fa-solid fa-bowl-rice text-3xl text-amber-400 mb-1"></i>
+                <span class="text-[10px] font-bold text-gray-300">Mentai Isi 6</span>
+                <span class="text-xs font-extrabold text-brand-gold">21K</span>
+              </div>
+              <div class="w-28 h-28 rounded-2xl glass-panel p-2 flex flex-col items-center justify-center text-center shadow-xl">
+                <i class="fa-solid fa-pepper-hot text-3xl text-brand-red mb-1"></i>
+                <span class="text-[10px] font-bold text-gray-300">Hot Lava Isi 6</span>
+                <span class="text-xs font-extrabold text-red-400">21K</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Search & Filter Bar -->
+          <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div class="relative w-full sm:max-w-md">
+              <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 text-sm"></i>
+              <input type="text" id="menuSearchInput" placeholder="Cari dimsum, kopi, matcha... (Tekan /)" 
+                     class="w-full pl-11 pr-10 py-3 rounded-2xl bg-brand-surface border border-white/10 text-white placeholder-gray-500 text-xs font-medium focus:outline-none focus:border-brand-red transition-all">
+              <button type="button" id="clearSearchBtn" class="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white hidden">&times;</button>
+            </div>
+            <span id="menuCountBadge" class="text-xs font-semibold text-gray-400">Menampilkan 23 Menu</span>
+          </div>
+
+          <!-- Category Horizontal Pills -->
+          <div class="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none" id="categoryScroll">
+            <button onclick="filterCategory('all')" class="cat-pill active px-4 py-2 rounded-xl text-xs font-bold glass-panel text-white whitespace-nowrap" data-cat="all">⭐ Semua Menu</button>
+            <button onclick="filterCategory('dimsum-mentai')" class="cat-pill px-4 py-2 rounded-xl text-xs font-bold glass-panel text-gray-400 hover:text-white whitespace-nowrap" data-cat="dimsum-mentai">🥟 Dimsum Mentai</button>
+            <button onclick="filterCategory('dimsum-hot-lava')" class="cat-pill px-4 py-2 rounded-xl text-xs font-bold glass-panel text-gray-400 hover:text-white whitespace-nowrap" data-cat="dimsum-hot-lava">🌶️ Dimsum Hot Lava</button>
+            <button onclick="filterCategory('additional')" class="cat-pill px-4 py-2 rounded-xl text-xs font-bold glass-panel text-gray-400 hover:text-white whitespace-nowrap" data-cat="additional">➕ Ekstra Topping</button>
+            <button onclick="filterCategory('coffee')" class="cat-pill px-4 py-2 rounded-xl text-xs font-bold glass-panel text-gray-400 hover:text-white whitespace-nowrap" data-cat="coffee">☕ Coffee</button>
+            <button onclick="filterCategory('matcha')" class="cat-pill px-4 py-2 rounded-xl text-xs font-bold glass-panel text-gray-400 hover:text-white whitespace-nowrap" data-cat="matcha">🍵 Matcha</button>
+            <button onclick="filterCategory('chocolate')" class="cat-pill px-4 py-2 rounded-xl text-xs font-bold glass-panel text-gray-400 hover:text-white whitespace-nowrap" data-cat="chocolate">🍫 Chocolate</button>
+          </div>
+
+          <!-- Product Grid -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5" id="productGridContainer">
+            <!-- Dynamic product cards will render here -->
+          </div>
+
+        </div>
+
+        <!-- RIGHT: CART SIDEBAR (4 COLS - STICKY) -->
+        <div class="lg:col-span-4 sticky top-24">
+          <div class="glass-panel rounded-3xl p-5 space-y-5 border border-white/10 shadow-2xl">
+            
+            <!-- Cart Header -->
+            <div class="flex items-center justify-between pb-3 border-b border-white/10">
+              <div>
+                <h3 class="text-base font-extrabold text-white">Ringkasan Pesanan</h3>
+                <span class="text-[11px] font-mono text-brand-orange" id="currentOrderId">#KYR-011026-0001</span>
+              </div>
+              <button onclick="clearCurrentCart()" class="text-xs text-gray-400 hover:text-brand-red flex items-center gap-1.5 transition-colors">
+                <i class="fa-regular fa-trash-can"></i> Reset
+              </button>
+            </div>
+
+            <!-- Dine In vs Take Away Switch -->
+            <div class="grid grid-cols-2 gap-2 p-1 bg-brand-surface rounded-2xl border border-white/5">
+              <button type="button" onclick="setOrderType('Dine In')" id="btnDineIn" class="py-2 rounded-xl text-xs font-bold bg-brand-red text-white transition-all">
+                🍽️ Makan di Tempat
+              </button>
+              <button type="button" onclick="setOrderType('Take Away')" id="btnTakeAway" class="py-2 rounded-xl text-xs font-bold text-gray-400 hover:text-white transition-all">
+                🛍️ Bawa Pulang
+              </button>
+            </div>
+
+            <!-- Customer & Table -->
+            <div class="grid grid-cols-3 gap-3">
+              <div class="col-span-2 space-y-1">
+                <label class="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Nama Pelanggan</label>
+                <input type="text" id="customerNameInput" placeholder="Contoh: Kak Naufal" value="" 
+                       class="w-full px-3 py-2 rounded-xl bg-brand-surface border border-white/10 text-xs text-white focus:outline-none focus:border-brand-red">
+              </div>
+              <div class="space-y-1" id="tableInputContainer">
+                <label class="text-[10px] uppercase font-bold text-gray-400 tracking-wider">No. Meja</label>
+                <input type="text" id="tableNoInput" placeholder="01" value="01" 
+                       class="w-full px-3 py-2 rounded-xl bg-brand-surface border border-white/10 text-xs text-white text-center focus:outline-none focus:border-brand-red">
+              </div>
+            </div>
+
+            <!-- Cart Items List (Scrollable) -->
+            <div class="space-y-2">
+              <div class="flex items-center justify-between text-xs text-gray-400 font-semibold">
+                <span>Daftar Menu (<strong id="cartItemTotalCount" class="text-white">0</strong> item)</span>
+              </div>
+              <div class="max-h-[260px] overflow-y-auto space-y-2 pr-1" id="cartItemsList">
+                <!-- Cart items populated by JS -->
+              </div>
+            </div>
+
+            <!-- General Notes -->
+            <input type="text" id="orderGeneralNote" placeholder="Catatan tambahan pesanan..." 
+                   class="w-full px-3.5 py-2 rounded-xl bg-brand-surface border border-white/10 text-xs text-white focus:outline-none focus:border-brand-red">
+
+            <!-- Subtotal, Diskon & Grand Total -->
+            <div class="space-y-2.5 pt-3 border-t border-white/10 text-xs">
+              <div class="flex justify-between text-gray-400">
+                <span>Subtotal</span>
+                <span class="text-white font-bold" id="cartSubtotalText">Rp 0</span>
+              </div>
+              <div class="flex justify-between text-gray-400 items-center">
+                <span class="flex items-center gap-1.5">
+                  Diskon
+                  <button type="button" onclick="toggleDiscountBox()" class="text-[10px] px-2 py-0.5 rounded bg-brand-gold/20 text-brand-gold font-bold">+ Voucher</button>
+                </span>
+                <span class="text-emerald-400 font-bold" id="cartDiscountText">- Rp 0</span>
+              </div>
+
+              <!-- Collapsible Voucher Input -->
+              <div id="discountBox" class="hidden p-2 rounded-xl bg-brand-surface border border-white/5 space-y-2">
+                <div class="flex gap-2">
+                  <input type="number" id="discountValInput" placeholder="Nominal Rp" class="flex-1 px-2.5 py-1 rounded-lg bg-brand-card border border-white/10 text-xs text-white">
+                  <button onclick="applyDiscount()" class="px-3 py-1 rounded-lg bg-brand-red text-white text-xs font-bold">Pakai</button>
+                </div>
+              </div>
+
+              <div class="flex justify-between text-sm pt-2 border-t border-white/10 items-baseline">
+                <span class="font-extrabold text-white">Total Tagihan</span>
+                <span class="font-mono text-xl font-extrabold text-brand-red" id="cartTotalPriceText">Rp 0</span>
+              </div>
+            </div>
+
+            <!-- Payment Button -->
+            <button type="button" id="btnProcessPayment" onclick="openPaymentModal()" disabled 
+                    class="w-full py-3.5 rounded-2xl bg-gradient-to-r from-brand-redDark to-brand-red text-white font-extrabold text-sm shadow-xl shadow-brand-red/30 hover:scale-[1.02] active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed transition-all flex items-center justify-between px-5">
+              <span class="flex items-center gap-2">
+                <i class="fa-solid fa-credit-card"></i>
+                <span>Proses Bayar (F4)</span>
+              </span>
+              <span class="text-[11px] font-mono px-2 py-0.5 rounded bg-white/20">ENTER ➔</span>
+            </button>
+
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════ -->
+    <!-- VIEW 2: DATA LAPORAN & TRANSAKSI           -->
+    <!-- ═══════════════════════════════════════════ -->
+    <div id="viewReports" class="view-panel hidden space-y-6">
+      
+      <!-- Top Metrics (KPIs) -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+        <div class="glass-panel p-5 rounded-3xl space-y-2 border-l-4 border-brand-red">
+          <span class="text-xs font-bold text-gray-400 uppercase tracking-wider">Total Omset</span>
+          <h3 class="text-2xl font-extrabold text-brand-red font-mono" id="kpiTotalRevenue">Rp 0</h3>
+          <span class="text-[11px] text-gray-400">Penjualan berhasil</span>
+        </div>
+        <div class="glass-panel p-5 rounded-3xl space-y-2 border-l-4 border-brand-orange">
+          <span class="text-xs font-bold text-gray-400 uppercase tracking-wider">Total Transaksi</span>
+          <h3 class="text-2xl font-extrabold text-white font-mono" id="kpiTotalOrders">0 Pesanan</h3>
+          <span class="text-[11px] text-gray-400">Tercatat di sistem</span>
+        </div>
+        <div class="glass-panel p-5 rounded-3xl space-y-2 border-l-4 border-emerald-500">
+          <span class="text-xs font-bold text-gray-400 uppercase tracking-wider">Tunai (Cash)</span>
+          <h3 class="text-2xl font-extrabold text-emerald-400 font-mono" id="kpiTotalCash">Rp 0</h3>
+          <span class="text-[11px] text-gray-400" id="kpiCashCount">0 transaksi tunai</span>
+        </div>
+        <div class="glass-panel p-5 rounded-3xl space-y-2 border-l-4 border-sky-500">
+          <span class="text-xs font-bold text-gray-400 uppercase tracking-wider">Non-Tunai (QRIS)</span>
+          <h3 class="text-2xl font-extrabold text-sky-400 font-mono" id="kpiTotalNonCash">Rp 0</h3>
+          <span class="text-[11px] text-gray-400" id="kpiNonCashCount">0 transaksi QRIS</span>
+        </div>
+      </div>
+
+      <!-- THE MAIN CARD: DATA PEMBELIAN DD/MM/YYYY -->
+      <div class="glass-panel rounded-3xl p-6 sm:p-8 space-y-6 border border-white/10 shadow-2xl relative overflow-hidden">
+        <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-6 border-b border-white/10">
+          <div>
+            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-brand-red/20 text-brand-red text-xs font-bold mb-2">
+              <span class="w-2 h-2 rounded-full bg-brand-red animate-pulse"></span> REKAPITULASI RESMI
+            </div>
+            <h2 class="text-2xl sm:text-3xl font-extrabold text-white" id="reportCardTitle">DATA PEMBELIAN HARI INI</h2>
+            <p class="text-xs sm:text-sm text-gray-400 mt-1">Riwayat lengkap penjualan, status lunas, rincian produk, dan kalkulasi uang kasir.</p>
+          </div>
+
+          <!-- Actions -->
+          <div class="flex flex-wrap items-center gap-3">
+            <button onclick="exportToCSV()" class="px-4 py-2.5 rounded-xl bg-emerald-600/20 text-emerald-400 hover:bg-emerald-600/30 text-xs font-bold border border-emerald-500/30 flex items-center gap-2 transition-all">
+              <i class="fa-solid fa-file-excel"></i> Export CSV
+            </button>
+            <button onclick="window.print()" class="px-4 py-2.5 rounded-xl glass-panel text-white text-xs font-bold flex items-center gap-2 hover:border-white/20 transition-all">
+              <i class="fa-solid fa-print"></i> Cetak Rekap
+            </button>
+            <button onclick="resetAllTransactions()" class="px-4 py-2.5 rounded-xl bg-red-950/40 text-red-400 hover:bg-red-900/40 text-xs font-bold border border-red-800/40 flex items-center gap-2 transition-all">
+              <i class="fa-solid fa-arrows-rotate"></i> Reset Shift
+            </button>
+          </div>
+        </div>
+
+        <!-- Filter Bar -->
+        <div class="flex flex-wrap items-center justify-between gap-4 bg-brand-surface p-4 rounded-2xl border border-white/5 text-xs">
+          <div class="flex items-center gap-2">
+            <span class="text-gray-400 font-bold">Periode:</span>
+            <button onclick="setReportPeriod('today')" class="report-period-btn active px-3 py-1.5 rounded-lg bg-brand-red text-white font-bold" data-period="today">Hari Ini</button>
+            <button onclick="setReportPeriod('yesterday')" class="report-period-btn px-3 py-1.5 rounded-lg text-gray-400 hover:text-white" data-period="yesterday">Kemarin</button>
+            <button onclick="setReportPeriod('week')" class="report-period-btn px-3 py-1.5 rounded-lg text-gray-400 hover:text-white" data-period="week">7 Hari</button>
+            <button onclick="setReportPeriod('all')" class="report-period-btn px-3 py-1.5 rounded-lg text-gray-400 hover:text-white" data-period="all">Semua</button>
+          </div>
+
+          <div class="flex items-center gap-3">
+            <select id="filterPaymentSelect" onchange="renderReportsView()" class="px-3 py-1.5 rounded-lg bg-brand-card border border-white/10 text-white text-xs font-medium focus:outline-none">
+              <option value="all">Semua Metode</option>
+              <option value="Tunai">💵 Tunai (Cash)</option>
+              <option value="Non-Tunai">📱 Non-Tunai (QRIS)</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Transactions List Inside Main Card -->
+        <div class="space-y-4" id="transactionsCardsList">
+          <!-- Populated by JS -->
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- ═══════════════════════════════════════════ -->
+    <!-- VIEW 3: CATATAN ADMIN & KELOLA STOK        -->
+    <!-- ═══════════════════════════════════════════ -->
+    <div id="viewNotes" class="view-panel hidden space-y-6">
+      <div class="glass-panel p-6 sm:p-8 rounded-3xl space-y-6">
+        
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-white/10">
+          <div>
+            <h2 class="text-2xl font-extrabold text-white">Catatan Operasional & Serah Terima Shift</h2>
+            <p class="text-xs text-gray-400 mt-1">Catat modal awal laci kasir, bahan yang perlu dibelanjakan, dan memo penting.</p>
+          </div>
+          <button onclick="openNewNoteModal()" class="px-5 py-2.5 rounded-xl bg-brand-red text-white text-xs font-bold flex items-center gap-2 shadow-lg shadow-brand-red/30">
+            <i class="fa-solid fa-plus"></i> Tambah Catatan
+          </button>
+        </div>
+
+        <!-- Sticky Notes Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-5" id="adminNotesGrid">
+          <!-- Populated by JS -->
+        </div>
+
+        <!-- Quick Menu Stock Availability Toggle -->
+        <div class="pt-8 border-t border-white/10 space-y-4">
+          <h3 class="text-lg font-bold text-white flex items-center gap-2">
+            <i class="fa-solid fa-bolt text-brand-gold"></i>
+            <span>Kelola Ketersediaan Menu (Stok Cepat)</span>
+          </h3>
+          <p class="text-xs text-gray-400">Klik tombol untuk mengubah menu menjadi "Tersedia" atau "Habis" secara instan.</p>
+          
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3" id="stockToggleList">
+            <!-- Populated by JS -->
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </main>
+
+  <!-- ═══ MODAL: PEMBAYARAN TUNAI & QRIS ═══ -->
+  <div id="paymentModal" class="fixed inset-0 z-50 bg-black/75 backdrop-blur-md hidden flex items-center justify-center p-4">
+    <div class="glass-panel rounded-3xl max-w-lg w-full p-6 space-y-5 border border-white/10 shadow-2xl">
+      
+      <div class="flex items-center justify-between pb-3 border-b border-white/10">
+        <div>
+          <span class="text-[10px] font-bold text-brand-red tracking-wider uppercase">KYARO POINT OF SALE</span>
+          <h3 class="text-lg font-extrabold text-white">Pembayaran Transaksi</h3>
+        </div>
+        <button onclick="closeModal('paymentModal')" class="text-gray-400 hover:text-white text-xl">&times;</button>
+      </div>
+
+      <!-- Bill Total Callout -->
+      <div class="p-5 rounded-2xl bg-gradient-to-r from-red-950/40 via-brand-surface to-red-950/40 border border-brand-red/30 text-center space-y-1">
+        <span class="text-[11px] uppercase font-bold text-gray-400">Total Yang Harus Dibayar</span>
+        <div class="text-3xl font-mono font-extrabold text-brand-red" id="modalBillAmount">Rp 0</div>
+        <span class="text-xs text-gray-400" id="modalBillItemsInfo">0 item</span>
+      </div>
+
+      <!-- Method Switcher -->
+      <div class="grid grid-cols-2 gap-2 p-1 bg-brand-surface rounded-2xl border border-white/5">
+        <button type="button" onclick="setPaymentMethod('Tunai')" id="tabPayCash" class="py-2.5 rounded-xl text-xs font-bold bg-brand-red text-white flex items-center justify-center gap-2 transition-all">
+          <i class="fa-solid fa-money-bill-wave"></i> Tunai (Cash)
+        </button>
+        <button type="button" onclick="setPaymentMethod('Non-Tunai')" id="tabPayCashless" class="py-2.5 rounded-xl text-xs font-bold text-gray-400 hover:text-white flex items-center justify-center gap-2 transition-all">
+          <i class="fa-solid fa-qrcode"></i> Non-Tunai (QRIS)
+        </button>
+      </div>
+
+      <!-- TUNAI PANEL -->
+      <div id="payPanelCash" class="space-y-4">
+        <div class="space-y-1.5">
+          <label class="text-xs font-bold text-gray-300">Uang Diterima dari Pelanggan:</label>
+          <div class="relative">
+            <span class="absolute left-4 top-1/2 -translate-y-1/2 font-mono font-bold text-gray-400">Rp</span>
+            <input type="text" id="cashInput" inputmode="numeric" placeholder="0" 
+                   class="w-full pl-12 pr-4 py-3 rounded-2xl bg-brand-surface border border-white/10 text-white font-mono text-xl font-extrabold focus:outline-none focus:border-brand-red">
+          </div>
+        </div>
+
+        <!-- Quick Cash Denominations -->
+        <div class="grid grid-cols-4 gap-2 text-xs font-mono font-bold">
+          <button type="button" onclick="setExactCash()" class="py-2 rounded-xl bg-amber-400/20 text-amber-300 border border-amber-400/30">Uang Pas</button>
+          <button type="button" onclick="addCash(20000)" class="py-2 rounded-xl glass-panel text-gray-300 hover:text-white">20K</button>
+          <button type="button" onclick="addCash(50000)" class="py-2 rounded-xl glass-panel text-gray-300 hover:text-white">50K</button>
+          <button type="button" onclick="addCash(100000)" class="py-2 rounded-xl glass-panel text-gray-300 hover:text-white">100K</button>
+        </div>
+
+        <!-- Realtime Kembalian Calculation -->
+        <div class="p-3.5 rounded-2xl bg-brand-surface border border-white/5 space-y-1.5 text-xs font-mono">
+          <div class="flex justify-between text-gray-400">
+            <span>Uang Diterima:</span>
+            <span class="text-white font-bold" id="calcPaidText">Rp 0</span>
+          </div>
+          <div class="flex justify-between font-bold text-sm pt-1 border-t border-white/10">
+            <span id="calcChangeLabel" class="text-gray-300">Kembalian:</span>
+            <span id="calcChangeVal" class="text-emerald-400 font-extrabold text-base">Rp 0</span>
+          </div>
+          <div id="calcWarningShortage" class="hidden text-brand-red font-sans font-bold text-[11px] pt-1">
+            ⚠️ Uang yang dimasukkan masih kurang!
+          </div>
+        </div>
+      </div>
+
+      <!-- QRIS PANEL -->
+      <div id="payPanelCashless" class="hidden space-y-4 text-center py-2">
+        <div class="w-48 h-48 mx-auto rounded-2xl bg-white p-3 flex flex-col items-center justify-center shadow-xl">
+          <div class="text-brand-dark font-extrabold text-xs tracking-widest mb-1">QRIS KYARO DIMSUM</div>
+          <!-- Mockup QR code -->
+          <svg class="w-32 h-32" viewBox="0 0 100 100">
+            <rect width="100" height="100" fill="white"/>
+            <rect x="10" y="10" width="25" height="25" fill="black"/>
+            <rect x="65" y="10" width="25" height="25" fill="black"/>
+            <rect x="10" y="65" width="25" height="25" fill="black"/>
+            <rect x="15" y="15" width="15" height="15" fill="white"/>
+            <rect x="70" y="15" width="15" height="15" fill="white"/>
+            <rect x="15" y="70" width="15" height="15" fill="white"/>
+            <rect x="40" y="40" width="20" height="20" fill="#dc2626"/>
+          </svg>
+          <span class="text-[10px] text-gray-500 font-bold mt-1">GoPay • OVO • Dana • BCA</span>
+        </div>
+        <p class="text-xs text-gray-400">Tunjukkan QR ke pembeli untuk scan nominal tagihan otomatis.</p>
+      </div>
+
+      <div class="flex items-center justify-end gap-3 pt-3 border-t border-white/10">
+        <button type="button" onclick="closeModal('paymentModal')" class="px-5 py-2.5 rounded-xl glass-panel text-xs font-bold text-gray-300">Batal</button>
+        <button type="button" id="btnConfirmPayment" onclick="finalizeTransaction()" 
+                class="px-6 py-2.5 rounded-xl bg-brand-red hover:bg-brand-redDark text-white text-xs font-extrabold shadow-lg shadow-brand-red/30 transition-all">
+          Konfirmasi & Selesaikan
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ═══ MODAL: STRUK THERMAL 80MM (PRINT READY) ═══ -->
+  <div id="receiptModal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-md hidden flex items-center justify-center p-4">
+    <div class="glass-panel rounded-3xl max-w-sm w-full p-6 space-y-4 border border-white/10 shadow-2xl">
+      
+      <div class="flex items-center justify-between pb-2 border-b border-white/10">
+        <span class="text-xs font-bold text-emerald-400">✓ TRANSAKSI LUNAS</span>
+        <button onclick="closeModal('receiptModal')" class="text-gray-400 hover:text-white text-xl">&times;</button>
+      </div>
+
+      <!-- Physical Thermal Receipt Structure -->
+      <div id="printableThermalReceipt" class="bg-white text-black p-4 font-mono text-xs rounded-xl shadow-inner space-y-3">
+        <div class="text-center space-y-0.5">
+          <h4 class="font-extrabold text-sm tracking-wider">WAROENG KYARO</h4>
+          <p class="text-[10px] text-gray-600">DIMSUM & DRINK SPECIALIST</p>
+          <p class="text-[9px] text-gray-500">Instagram: @waroengkyaro</p>
+        </div>
+
+        <div class="border-t border-dashed border-gray-400 pt-2 space-y-1 text-[11px]">
+          <div class="flex justify-between"><span>No:</span><strong id="recId">#KYR-0001</strong></div>
+          <div class="flex justify-between"><span>Waktu:</span><span id="recTime">01/10/2026</span></div>
+          <div class="flex justify-between"><span>Kasir:</span><span>Admin Shift 1</span></div>
+          <div class="flex justify-between"><span>Customer:</span><strong id="recCustomer">Kak Naufal</strong></div>
+        </div>
+
+        <div class="border-t border-dashed border-gray-400 pt-2 space-y-1.5" id="recItems">
+          <!-- Items injected by JS -->
+        </div>
+
+        <div class="border-t border-dashed border-gray-400 pt-2 space-y-1 text-[11px]">
+          <div class="flex justify-between"><span>Subtotal:</span><span id="recSub">Rp 0</span></div>
+          <div class="flex justify-between text-gray-600"><span>Diskon:</span><span id="recDisc">- Rp 0</span></div>
+          <div class="flex justify-between font-bold text-xs pt-1 border-t border-black">
+            <span>TOTAL:</span><span id="recTotal">Rp 0</span>
+          </div>
+          <div class="flex justify-between pt-1">
+            <span>Metode:</span><strong id="recMethod">TUNAI</strong>
+          </div>
+          <div class="flex justify-between"><span>Bayar:</span><span id="recPaid">Rp 0</span></div>
+          <div class="flex justify-between"><span>Kembali:</span><strong id="recChange">Rp 0</strong></div>
+        </div>
+
+        <div class="border-t border-dashed border-gray-400 pt-2 text-center text-[10px] text-gray-500">
+          <p class="font-bold text-black">Terima Kasih Atas Kunjungan Anda!</p>
+          <p>Nikmati Kelezatan Dimsum Kyaro</p>
+        </div>
+      </div>
+
+      <div class="flex gap-2 pt-2">
+        <button onclick="window.print()" class="flex-1 py-3 rounded-xl bg-white text-brand-dark font-extrabold text-xs flex items-center justify-center gap-2">
+          <i class="fa-solid fa-print"></i> Cetak Struk
+        </button>
+        <button onclick="closeModal('receiptModal')" class="flex-1 py-3 rounded-xl bg-brand-red text-white font-extrabold text-xs">
+          Pesanan Baru
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ═══ MODAL: TAMBAH CATATAN ADMIN ═══ -->
+  <div id="adminNoteModal" class="fixed inset-0 z-50 bg-black/75 backdrop-blur-md hidden flex items-center justify-center p-4">
+    <div class="glass-panel rounded-3xl max-w-md w-full p-6 space-y-4 border border-white/10 shadow-2xl">
+      <h3 class="text-lg font-bold text-white">Tambah Memo / Catatan Kasir</h3>
+      
+      <div class="space-y-3 text-xs">
+        <div>
+          <label class="block font-bold text-gray-400 mb-1">Judul Catatan</label>
+          <input type="text" id="noteTitleInput" placeholder="Contoh: Modal Kasir Pagi" class="w-full px-3 py-2 rounded-xl bg-brand-surface border border-white/10 text-white focus:outline-none focus:border-brand-red">
+        </div>
+        <div>
+          <label class="block font-bold text-gray-400 mb-1">Kategori</label>
+          <select id="noteCatInput" class="w-full px-3 py-2 rounded-xl bg-brand-surface border border-white/10 text-white focus:outline-none focus:border-brand-red">
+            <option value="modal">💵 Uang Modal / Kas</option>
+            <option value="stok">📦 Stok & Persediaan</option>
+            <option value="shift">🔄 Serah Terima Shift</option>
+            <option value="umum">📌 Catatan Umum</option>
+          </select>
+        </div>
+        <div>
+          <label class="block font-bold text-gray-400 mb-1">Rincian Memo</label>
+          <textarea id="noteContentInput" rows="3" placeholder="Tuliskan catatan lengkap..." class="w-full px-3 py-2 rounded-xl bg-brand-surface border border-white/10 text-white focus:outline-none focus:border-brand-red"></textarea>
+        </div>
+      </div>
+
+      <div class="flex justify-end gap-2 pt-2">
+        <button onclick="closeModal('adminNoteModal')" class="px-4 py-2 rounded-xl glass-panel text-xs text-gray-400">Batal</button>
+        <button onclick="saveAdminNote()" class="px-5 py-2 rounded-xl bg-brand-red text-white text-xs font-bold">Simpan</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Container -->
+  <div id="toastContainer" class="fixed bottom-6 left-6 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- JAVASCRIPT: LOGIC & CONTROLLER              -->
+  <!-- ═══════════════════════════════════════════ -->
+  <script>
+    // 1. DATA KATALOG 23 MENU KYARO
+    const MENU_ITEMS = [
+      // Dimsum Mentai
+      { id: "dm-3", name: "Dimsum Mentai Isi 3", category: "dimsum-mentai", type: "makanan", price: 13000, desc: "3 pcs dimsum ayam lembut berselimut saus mentai gurih torched khas Kyaro.", image: "assets/mentai_crop.png", fallback: "https://images.unsplash.com/photo-1541696432-82c6da8ce7bf?auto=format&fit=crop&w=600&q=80", badge: "K MENTAI" },
+      { id: "dm-6", name: "Dimsum Mentai Isi 6", category: "dimsum-mentai", type: "makanan", price: 21000, desc: "6 pcs dimsum porsi favorit dengan limpahan saus mentai gurih torched.", image: "assets/mentai_crop.png", fallback: "https://images.unsplash.com/photo-1541696432-82c6da8ce7bf?auto=format&fit=crop&w=600&q=80", badge: "FAVORIT 🔥" },
+      { id: "dm-8", name: "Dimsum Mentai Isi 8", category: "dimsum-mentai", type: "makanan", price: 29000, desc: "8 pcs dimsum lezat saus mentai gurih dengan taburan nori parsley.", image: "assets/mentai_crop.png", fallback: "https://images.unsplash.com/photo-1541696432-82c6da8ce7bf?auto=format&fit=crop&w=600&q=80", badge: "K MENTAI" },
+      { id: "dm-10", name: "Dimsum Mentai Isi 10", category: "dimsum-mentai", type: "makanan", price: 36000, desc: "10 pcs dimsum mantap untuk dinikmati berdua, creamy & smoky.", image: "assets/mentai_crop.png", fallback: "https://images.unsplash.com/photo-1541696432-82c6da8ce7bf?auto=format&fit=crop&w=600&q=80", badge: "K MENTAI" },
+      { id: "dm-16", name: "Dimsum Mentai Isi 16", category: "dimsum-mentai", type: "makanan", price: 56000, desc: "16 pcs party portion dimsum mentai cocok untuk makan ramean.", image: "assets/mentai_crop.png", fallback: "https://images.unsplash.com/photo-1541696432-82c6da8ce7bf?auto=format&fit=crop&w=600&q=80", badge: "K MENTAI" },
+      { id: "dm-20", name: "Dimsum Mentai Isi 20", category: "dimsum-mentai", type: "makanan", price: 68000, desc: "20 pcs platter jumbo paling hemat, puas dan kenyang.", image: "assets/mentai_crop.png", fallback: "https://images.unsplash.com/photo-1541696432-82c6da8ce7bf?auto=format&fit=crop&w=600&q=80", badge: "JUMBO 👑" },
+
+      // Dimsum Hot Lava
+      { id: "dhl-3", name: "Dimsum Hot Lava Isi 3", category: "dimsum-hot-lava", type: "makanan", price: 13000, desc: "3 pcs dimsum pedas nampol bermandikan saus lava cabai pilihan.", image: "assets/hot_lava_crop.png", fallback: "https://images.unsplash.com/photo-1496116218417-1a781b1c416c?auto=format&fit=crop&w=600&q=80", badge: "HOT LAVA 🌶️" },
+      { id: "dhl-6", name: "Dimsum Hot Lava Isi 6", category: "dimsum-hot-lava", type: "makanan", price: 21000, desc: "6 pcs dimsum pedas gurih nagih dengan aroma cabai segar Kyaro.", image: "assets/hot_lava_crop.png", fallback: "https://images.unsplash.com/photo-1496116218417-1a781b1c416c?auto=format&fit=crop&w=600&q=80", badge: "BEST SELLER 🌶️" },
+      { id: "dhl-8", name: "Dimsum Hot Lava Isi 8", category: "dimsum-hot-lava", type: "makanan", price: 29000, desc: "8 pcs dimsum saus lava pedas membara bikin melek.", image: "assets/hot_lava_crop.png", fallback: "https://images.unsplash.com/photo-1496116218417-1a781b1c416c?auto=format&fit=crop&w=600&q=80", badge: "HOT LAVA 🌶️" },
+      { id: "dhl-10", name: "Dimsum Hot Lava Isi 10", category: "dimsum-hot-lava", type: "makanan", price: 36000, desc: "10 pcs dimsum pedas mantap untuk pecinta pedas sejati.", image: "assets/hot_lava_crop.png", fallback: "https://images.unsplash.com/photo-1496116218417-1a781b1c416c?auto=format&fit=crop&w=600&q=80", badge: "HOT LAVA 🌶️" },
+      { id: "dhl-16", name: "Dimsum Hot Lava Isi 16", category: "dimsum-hot-lava", type: "makanan", price: 56000, desc: "16 pcs party portion dimsum hot lava cocok untuk nongkrong ramean.", image: "assets/hot_lava_crop.png", fallback: "https://images.unsplash.com/photo-1496116218417-1a781b1c416c?auto=format&fit=crop&w=600&q=80", badge: "HOT LAVA 🌶️" },
+      { id: "dhl-20", name: "Dimsum Hot Lava Isi 20", category: "dimsum-hot-lava", type: "makanan", price: 68000, desc: "20 pcs porsi jumbo dimsum hot lava sensasi pedas pol.", image: "assets/hot_lava_crop.png", fallback: "https://images.unsplash.com/photo-1496116218417-1a781b1c416c?auto=format&fit=crop&w=600&q=80", badge: "JUMBO LAVA 🌶️" },
+
+      // Additional
+      { id: "add-steam", name: "Dimsum Steam", category: "additional", type: "makanan", price: 3500, desc: "Dimsum ayam kukus original per pcs, tekstur kenyal dan juicy.", image: "assets/hot_lava_crop.png", fallback: "https://images.unsplash.com/photo-1496116218417-1a781b1c416c?auto=format&fit=crop&w=600&q=80", badge: "STEAM" },
+      { id: "add-chili", name: "Chili Oil", category: "additional", type: "makanan", price: 2500, desc: "Minyak cabai racikan khas Kyaro gurih dan beraroma harum rempah.", image: "assets/chili_oil.png", fallback: "https://images.unsplash.com/photo-1541696432-82c6da8ce7bf?auto=format&fit=crop&w=600&q=80", badge: "CHILI OIL" },
+      { id: "add-moza", name: "Mozarella (Ekstra)", category: "additional", type: "makanan", price: 2000, desc: "Topping keju mozarella leleh mulur yang gurih di atas dimsum hangat.", image: "assets/mozarella.png", fallback: "https://images.unsplash.com/photo-1541696432-82c6da8ce7bf?auto=format&fit=crop&w=600&q=80", badge: "MOZA" },
+
+      // Coffee Series
+      { id: "cof-aren", name: "Kopi Susu Gula Aren", category: "coffee", type: "minuman", price: 10000, desc: "Espresso mantap berpadu susu segar dan manis legit gula aren murni.", image: "assets/coffee_cup.png", fallback: "https://images.unsplash.com/photo-1536256263959-770b48d82b0a?auto=format&fit=crop&w=600&q=80", badge: "KOPI AREN" },
+      { id: "cof-cappucino", name: "Cappucino Coffee", category: "coffee", type: "minuman", price: 10000, desc: "Perpaduan espresso kental dengan foam susu lembut yang menenangkan.", image: "assets/coffee_cup.png", fallback: "https://images.unsplash.com/photo-1536256263959-770b48d82b0a?auto=format&fit=crop&w=600&q=80", badge: "COFFEE" },
+      { id: "cof-matchapresso", name: "Matchapresso", category: "coffee", type: "minuman", price: 10000, desc: "Fusion unik espresso kopi pekat berlayer matcha premium Kyaro.", image: "assets/drinks_crop.png", fallback: "https://images.unsplash.com/photo-1536256263959-770b48d82b0a?auto=format&fit=crop&w=600&q=80", badge: "SPECIAL FUSION" },
+
+      // Matcha Series
+      { id: "mat-sig", name: "Signature Matcha", category: "matcha", type: "minuman", price: 13000, desc: "Matcha Jepang otentik kental, wangi khas dan lembut creamy di lidah.", image: "assets/matcha_cup.png", fallback: "https://images.unsplash.com/photo-1536256263959-770b48d82b0a?auto=format&fit=crop&w=600&q=80", badge: "SIGNATURE 🍵" },
+      { id: "mat-latte", name: "Choco Matcha Latte", category: "matcha", type: "minuman", price: 15000, desc: "Kombinasi mewah bubuk cokelat premium, matcha pekat & susu segar.", image: "assets/drinks_crop.png", fallback: "https://images.unsplash.com/photo-1536256263959-770b48d82b0a?auto=format&fit=crop&w=600&q=80", badge: "PREMIUM" },
+      { id: "mat-berry", name: "Matchaberry", category: "matcha", type: "minuman", price: 13000, desc: "Kombinasi matcha autentik dengan manis asam sari buah berry segar.", image: "assets/matcha_cup.png", fallback: "https://images.unsplash.com/photo-1536256263959-770b48d82b0a?auto=format&fit=crop&w=600&q=80", badge: "MATCHA BERRY" },
+
+      // Chocolate Series
+      { id: "cho-sig", name: "Signature Chocolate", category: "chocolate", type: "minuman", price: 10000, desc: "Cokelat pekat pilihan kaya rasa manis pas disajikan dingin segar.", image: "assets/choco_cup.png", fallback: "https://images.unsplash.com/photo-1536256263959-770b48d82b0a?auto=format&fit=crop&w=600&q=80", badge: "CHOCO 🍫" },
+      { id: "cho-coffee", name: "Choco Coffee", category: "chocolate", type: "minuman", price: 13000, desc: "Perpaduan seimbang rasa cokelat mantap dan kopi harum menggugah selera.", image: "assets/choco_cup.png", fallback: "https://images.unsplash.com/photo-1536256263959-770b48d82b0a?auto=format&fit=crop&w=600&q=80", badge: "CHOCO COFFEE" }
+    ];
+
+    // 2. STATE MANAGEMENT
+    let state = {
+      cart: [],
+      orderType: "Dine In",
+      customerName: "Pelanggan",
+      tableNumber: "01",
+      activeCategory: "all",
+      searchQuery: "",
+      discount: 0,
+      soundEnabled: true,
+      currentPaymentMethod: "Tunai",
+      cashPaid: 0,
+      orderSeq: 1,
+      reportPeriod: "today"
+    };
+
+    // 3. SOUND SYNTHESIZER (WEB AUDIO API)
+    class SoundController {
+      constructor() { this.ctx = null; }
+      init() { if (!this.ctx) this.ctx = new (window.AudioContext || window.webkitAudioContext)(); }
+      beep() {
+        if (!state.soundEnabled) return;
+        this.init();
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.frequency.setValueAtTime(750, this.ctx.currentTime);
+        gain.gain.setValueAtTime(0.08, this.ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.12);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start();
+        osc.stop(this.ctx.currentTime + 0.12);
+      }
+      cashRegister() {
+        if (!state.soundEnabled) return;
+        this.init();
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = "triangle";
+        osc.frequency.setValueAtTime(987, now);
+        osc.frequency.setValueAtTime(1318, now + 0.1);
+        gain.gain.setValueAtTime(0.15, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.5);
+      }
+    }
+    const audio = new SoundController();
+
+    // 4. STORAGE HELPERS
+    const STORAGE_KEY_TX = "kyaro_pos_tx_v3";
+    const STORAGE_KEY_NOTES = "kyaro_pos_notes_v3";
+    const STORAGE_KEY_STOCK = "kyaro_pos_stock_v3";
+
+    function getTransactions() {
+      try { return JSON.parse(localStorage.getItem(STORAGE_KEY_TX)) || []; } 
+      catch (e) { return []; }
+    }
+    function saveTransactions(data) {
+      localStorage.setItem(STORAGE_KEY_TX, JSON.stringify(data));
+      updateReportBadge();
+    }
+
+    function getNotes() {
+      try { return JSON.parse(localStorage.getItem(STORAGE_KEY_NOTES)) || [
+        { id: "1", title: "Modal Awal Kasir", cat: "modal", content: "Kas kecil laci Rp 200.000 (Pecahan lengkap untuk kembalian).", time: "09:00 WIB" },
+        { id: "2", title: "Stok Saos Mentai", cat: "stok", content: "Saus mentai cukup untuk 60 porsi hari ini.", time: "11:30 WIB" }
+      ]; } catch (e) { return []; }
+    }
+    function saveNotes(data) { localStorage.setItem(STORAGE_KEY_NOTES, JSON.stringify(data)); }
+
+    function getStock() {
+      try { return JSON.parse(localStorage.getItem(STORAGE_KEY_STOCK)) || {}; }
+      catch (e) { return {}; }
+    }
+    function saveStock(data) { localStorage.setItem(STORAGE_KEY_STOCK, JSON.stringify(data)); }
+
+    // 5. HELPER UTILS
+    function formatIDR(num) {
+      return "Rp " + Math.round(num || 0).toLocaleString("id-ID");
+    }
+    function showToast(msg) {
+      const container = document.getElementById("toastContainer");
+      const el = document.createElement("div");
+      el.className = "px-4 py-3 rounded-2xl bg-brand-surface border border-white/20 text-white text-xs font-bold shadow-2xl flex items-center gap-2 pointer-events-auto transition-all duration-300";
+      el.innerHTML = `<span>✓</span> <span>${msg}</span>`;
+      container.appendChild(el);
+      setTimeout(() => { el.style.opacity = "0"; setTimeout(() => el.remove(), 300); }, 2500);
+    }
+    function generateOrderId() {
+      const d = new Date();
+      return `#KYR-${String(d.getDate()).padStart(2,'0')}${String(d.getMonth()+1).padStart(2,'0')}-${String(state.orderSeq).padStart(4,'0')}`;
+    }
+
+    // 6. RENDER CATALOG & PRODUCTS
+    function renderProducts() {
+      const container = document.getElementById("productGridContainer");
+      const stock = getStock();
+
+      const filtered = MENU_ITEMS.filter(item => {
+        const matchCat = (state.activeCategory === "all") || (item.category === state.activeCategory);
+        const matchSearch = (!state.searchQuery) || item.name.toLowerCase().includes(state.searchQuery);
+        return matchCat && matchSearch;
+      });
+
+      document.getElementById("menuCountBadge").textContent = `Menampilkan ${filtered.length} Menu`;
+
+      container.innerHTML = filtered.map(item => {
+        const isSoldOut = stock[item.id] === false;
+        const inCart = state.cart.find(c => c.id === item.id);
+        const qty = inCart ? inCart.qty : 0;
+
+        let actionBtn = "";
+        if (isSoldOut) {
+          actionBtn = `<span class="text-xs font-bold text-red-400 bg-red-950/40 px-3 py-1.5 rounded-xl border border-red-800/40">Habis</span>`;
+        } else if (qty > 0) {
+          actionBtn = `
+            <div class="flex items-center gap-2 bg-brand-surface p-1 rounded-xl border border-white/10">
+              <button onclick="updateQty('${item.id}', -1)" class="w-6 h-6 rounded-lg bg-brand-card text-white font-bold flex items-center justify-center hover:bg-brand-red">-</button>
+              <span class="font-mono font-bold text-xs text-brand-orange px-1">${qty}</span>
+              <button onclick="updateQty('${item.id}', 1)" class="w-6 h-6 rounded-lg bg-brand-card text-white font-bold flex items-center justify-center hover:bg-brand-red">+</button>
+            </div>
+          `;
+        } else {
+          actionBtn = `
+            <button onclick="addToCart('${item.id}')" class="px-3.5 py-1.5 rounded-xl bg-brand-red hover:bg-brand-redDark text-white text-xs font-bold transition-all flex items-center gap-1.5 shadow-md">
+              <i class="fa-solid fa-plus text-[10px]"></i> Tambah
+            </button>
+          `;
+        }
+
+        return `
+          <div class="ios-scroll-item glass-panel rounded-3xl overflow-hidden p-3.5 flex flex-col justify-between space-y-3 ${isSoldOut ? 'opacity-50' : ''}">
+            <div class="space-y-3">
+              <div class="relative w-full aspect-[16/10] rounded-2xl overflow-hidden bg-brand-surface">
+                <img src="${item.image}" alt="${item.name}" onerror="this.src='${item.fallback}'" class="w-full h-full object-cover hover:scale-105 transition-transform duration-500">
+                <span class="absolute top-2.5 left-2.5 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-black/60 backdrop-blur-md text-amber-300 border border-white/10">
+                  ${item.badge}
+                </span>
+              </div>
+              <div>
+                <h4 class="font-bold text-white text-sm leading-snug">${item.name}</h4>
+                <p class="text-[11px] text-gray-400 line-clamp-2 mt-1 leading-relaxed">${item.desc}</p>
+              </div>
+            </div>
+            
+            <div class="flex items-center justify-between pt-2 border-t border-white/5">
+              <span class="font-mono text-sm font-extrabold text-brand-orange">${formatIDR(item.price)}</span>
+              ${actionBtn}
+            </div>
+          </div>
+        `;
+      }).join("");
+
+      observeScrollAnimations();
+    }
+
+    // 7. CART CONTROLLER
+    function addToCart(id) {
+      const item = MENU_ITEMS.find(m => m.id === id);
+      if (!item) return;
+      const exist = state.cart.find(c => c.id === id);
+      if (exist) exist.qty += 1;
+      else state.cart.push({ id: item.id, name: item.name, price: item.price, qty: 1 });
+      audio.beep();
+      renderCart();
+      renderProducts();
+    }
+
+    function updateQty(id, delta) {
+      const item = state.cart.find(c => c.id === id);
+      if (!item) return;
+      item.qty += delta;
+      if (item.qty <= 0) state.cart = state.cart.filter(c => c.id !== id);
+      audio.beep();
+      renderCart();
+      renderProducts();
+    }
+
+    function renderCart() {
+      const list = document.getElementById("cartItemsList");
+      const totalQty = state.cart.reduce((a, b) => a + b.qty, 0);
+      const subtotal = state.cart.reduce((a, b) => a + (b.price * b.qty), 0);
+      const total = Math.max(0, subtotal - state.discount);
+
+      document.getElementById("cartItemTotalCount").textContent = totalQty;
+      document.getElementById("cartSubtotalText").textContent = formatIDR(subtotal);
+      document.getElementById("cartDiscountText").textContent = "- " + formatIDR(state.discount);
+      document.getElementById("cartTotalPriceText").textContent = formatIDR(total);
+      document.getElementById("btnProcessPayment").disabled = (state.cart.length === 0);
+
+      if (state.cart.length === 0) {
+        list.innerHTML = `
+          <div class="py-8 text-center text-gray-500 text-xs">
+            <i class="fa-solid fa-basket-shopping text-2xl mb-1"></i>
+            <p>Keranjang masih kosong</p>
+          </div>
+        `;
+        return;
+      }
+
+      list.innerHTML = state.cart.map(item => `
+        <div class="flex items-center justify-between p-2.5 rounded-2xl bg-brand-surface border border-white/5 text-xs">
+          <div>
+            <h5 class="font-bold text-white">${item.name}</h5>
+            <span class="text-[11px] font-mono text-gray-400">${formatIDR(item.price)} x ${item.qty}</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="font-mono font-bold text-brand-orange">${formatIDR(item.price * item.qty)}</span>
+            <button onclick="updateQty('${item.id}', -1)" class="text-gray-500 hover:text-red-400 text-sm pl-1">&times;</button>
+          </div>
+        </div>
+      `).join("");
+    }
+
+    function clearCurrentCart() {
+      state.cart = [];
+      state.discount = 0;
+      renderCart();
+      renderProducts();
+      showToast("Keranjang dikosongkan");
+    }
+
+    function setOrderType(type) {
+      state.orderType = type;
+      document.getElementById("btnDineIn").className = type === "Dine In" 
+        ? "py-2 rounded-xl text-xs font-bold bg-brand-red text-white transition-all"
+        : "py-2 rounded-xl text-xs font-bold text-gray-400 hover:text-white transition-all";
+      document.getElementById("btnTakeAway").className = type === "Take Away" 
+        ? "py-2 rounded-xl text-xs font-bold bg-brand-red text-white transition-all"
+        : "py-2 rounded-xl text-xs font-bold text-gray-400 hover:text-white transition-all";
+      document.getElementById("tableInputContainer").style.display = type === "Dine In" ? "block" : "none";
+      audio.beep();
+    }
+
+    function toggleDiscountBox() {
+      document.getElementById("discountBox").classList.toggle("hidden");
+    }
+
+    function applyDiscount() {
+      const val = parseInt(document.getElementById("discountValInput").value) || 0;
+      state.discount = val;
+      renderCart();
+      showToast("Voucher diskon diterapkan!");
+      document.getElementById("discountBox").classList.add("hidden");
+    }
+
+    // 8. PAYMENT & CASH REGISTER LOGIC
+    function openPaymentModal() {
+      const subtotal = state.cart.reduce((a, b) => a + (b.price * b.qty), 0);
+      const total = Math.max(0, subtotal - state.discount);
+      document.getElementById("modalBillAmount").textContent = formatIDR(total);
+      document.getElementById("modalBillItemsInfo").textContent = `${state.orderType} • ${state.cart.length} item menu`;
+      
+      state.cashPaid = total;
+      document.getElementById("cashInput").value = total.toLocaleString("id-ID");
+      calculateCashChange();
+
+      document.getElementById("paymentModal").classList.remove("hidden");
+    }
+
+    function setPaymentMethod(method) {
+      state.currentPaymentMethod = method;
+      document.getElementById("tabPayCash").classList.toggle("bg-brand-red", method === "Tunai");
+      document.getElementById("tabPayCash").classList.toggle("text-white", method === "Tunai");
+      document.getElementById("tabPayCashless").classList.toggle("bg-brand-red", method === "Non-Tunai");
+      document.getElementById("tabPayCashless").classList.toggle("text-white", method === "Non-Tunai");
+
+      document.getElementById("payPanelCash").classList.toggle("hidden", method !== "Tunai");
+      document.getElementById("payPanelCashless").classList.toggle("hidden", method !== "Non-Tunai");
+      audio.beep();
+    }
+
+    function calculateCashChange() {
+      const subtotal = state.cart.reduce((a, b) => a + (b.price * b.qty), 0);
+      const total = Math.max(0, subtotal - state.discount);
+      const paid = state.cashPaid;
+      const diff = paid - total;
+
+      document.getElementById("calcPaidText").textContent = formatIDR(paid);
+
+      if (diff >= 0) {
+        document.getElementById("calcChangeLabel").textContent = "Kembalian:";
+        document.getElementById("calcChangeVal").textContent = formatIDR(diff);
+        document.getElementById("calcChangeVal").className = "text-emerald-400 font-extrabold text-base";
+        document.getElementById("calcWarningShortage").classList.add("hidden");
+        document.getElementById("btnConfirmPayment").disabled = false;
+      } else {
+        document.getElementById("calcChangeLabel").textContent = "Uang Kurang:";
+        document.getElementById("calcChangeVal").textContent = "- " + formatIDR(Math.abs(diff));
+        document.getElementById("calcChangeVal").className = "text-brand-red font-extrabold text-base";
+        document.getElementById("calcWarningShortage").classList.remove("hidden");
+        document.getElementById("btnConfirmPayment").disabled = true;
+      }
+    }
+
+    function setExactCash() {
+      const subtotal = state.cart.reduce((a, b) => a + (b.price * b.qty), 0);
+      state.cashPaid = Math.max(0, subtotal - state.discount);
+      document.getElementById("cashInput").value = state.cashPaid.toLocaleString("id-ID");
+      calculateCashChange();
+    }
+
+    function addCash(val) {
+      state.cashPaid = val;
+      document.getElementById("cashInput").value = val.toLocaleString("id-ID");
+      calculateCashChange();
+    }
+
+    document.getElementById("cashInput").addEventListener("input", (e) => {
+      const raw = parseInt(e.target.value.replace(/[^0-9]/g, '')) || 0;
+      state.cashPaid = raw;
+      e.target.value = raw > 0 ? raw.toLocaleString("id-ID") : "";
+      calculateCashChange();
+    });
+
+    function finalizeTransaction() {
+      const subtotal = state.cart.reduce((a, b) => a + (b.price * b.qty), 0);
+      const total = Math.max(0, subtotal - state.discount);
+      const now = new Date();
+      const orderId = generateOrderId();
+
+      const tx = {
+        id: orderId,
+        date: now.toLocaleDateString("id-ID"),
+        time: now.toLocaleTimeString("id-ID"),
+        orderType: state.orderType,
+        customer: document.getElementById("customerNameInput").value || "Pelanggan",
+        table: state.orderType === "Dine In" ? (document.getElementById("tableNoInput").value || "01") : "-",
+        items: [...state.cart],
+        subtotal: subtotal,
+        discount: state.discount,
+        total: total,
+        paymentMethod: state.currentPaymentMethod,
+        cashPaid: state.currentPaymentMethod === "Tunai" ? state.cashPaid : total,
+        cashChange: state.currentPaymentMethod === "Tunai" ? Math.max(0, state.cashPaid - total) : 0
+      };
+
+      const txs = getTransactions();
+      txs.unshift(tx);
+      saveTransactions(txs);
+
+      audio.cashRegister();
+      closeModal("paymentModal");
+      showToast(`Transaksi ${orderId} Berhasil!`);
+
+      // Open Receipt Modal
+      document.getElementById("recId").textContent = tx.id;
+      document.getElementById("recTime").textContent = `${tx.date} ${tx.time}`;
+      document.getElementById("recCustomer").textContent = `${tx.customer} (${tx.table})`;
+      document.getElementById("recSub").textContent = formatIDR(tx.subtotal);
+      document.getElementById("recDisc").textContent = "- " + formatIDR(tx.discount);
+      document.getElementById("recTotal").textContent = formatIDR(tx.total);
+      document.getElementById("recMethod").textContent = tx.paymentMethod.toUpperCase();
+      document.getElementById("recPaid").textContent = formatIDR(tx.cashPaid);
+      document.getElementById("recChange").textContent = formatIDR(tx.cashChange);
+
+      document.getElementById("recItems").innerHTML = tx.items.map(i => `
+        <div class="flex justify-between text-[11px]">
+          <span>${i.name} x${i.qty}</span>
+          <span>${formatIDR(i.price * i.qty)}</span>
+        </div>
+      `).join("");
+
+      document.getElementById("receiptModal").classList.remove("hidden");
+
+      // Reset
+      state.cart = [];
+      state.discount = 0;
+      state.orderSeq += 1;
+      document.getElementById("currentOrderId").textContent = generateOrderId();
+      renderCart();
+      renderProducts();
+    }
+
+    // 9. REPORTS VIEW CONTROLLER
+    function updateReportBadge() {
+      const txs = getTransactions();
+      document.getElementById("navReportBadge").textContent = txs.length;
+    }
+
+    function renderReportsView() {
+      const txs = getTransactions();
+      const payFilter = document.getElementById("filterPaymentSelect").value;
+      const todayStr = new Date().toLocaleDateString("id-ID");
+
+      const filtered = txs.filter(t => {
+        if (state.reportPeriod === "today" && t.date !== todayStr) return false;
+        if (payFilter !== "all" && !t.paymentMethod.includes(payFilter)) return false;
+        return true;
+      });
+
+      const totalRevenue = filtered.reduce((a, b) => a + b.total, 0);
+      const totalCash = filtered.filter(t => t.paymentMethod === "Tunai").reduce((a, b) => a + b.total, 0);
+      const totalQRIS = filtered.filter(t => t.paymentMethod !== "Tunai").reduce((a, b) => a + b.total, 0);
+
+      document.getElementById("kpiTotalRevenue").textContent = formatIDR(totalRevenue);
+      document.getElementById("kpiTotalOrders").textContent = `${filtered.length} Pesanan`;
+      document.getElementById("kpiTotalCash").textContent = formatIDR(totalCash);
+      document.getElementById("kpiTotalNonCash").textContent = formatIDR(totalQRIS);
+
+      const listContainer = document.getElementById("transactionsCardsList");
+      if (filtered.length === 0) {
+        listContainer.innerHTML = `<p class="py-12 text-center text-gray-500 text-xs">Belum ada transaksi pada periode ini.</p>`;
+        return;
+      }
+
+      listContainer.innerHTML = filtered.map(t => `
+        <div class="ios-scroll-item p-4 rounded-2xl bg-brand-surface border border-white/5 space-y-3 text-xs">
+          <div class="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-white/5">
+            <div class="flex items-center gap-2">
+              <span class="font-mono font-bold text-white">${t.id}</span>
+              <span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${t.paymentMethod === 'Tunai' ? 'bg-emerald-950 text-emerald-400' : 'bg-sky-950 text-sky-400'}">
+                ${t.paymentMethod}
+              </span>
+              <span class="text-gray-400">• ${t.customer} (Meja ${t.table})</span>
+            </div>
+            <span class="text-gray-500 font-mono text-[11px]">${t.date} ${t.time}</span>
+          </div>
+          <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+            ${t.items.map(i => `
+              <div class="px-2.5 py-1.5 rounded-xl bg-brand-card text-[11px] text-gray-300">
+                <strong class="text-brand-orange">${i.qty}x</strong> ${i.name}
+              </div>
+            `).join("")}
+          </div>
+          <div class="flex justify-between items-center pt-2 border-t border-white/5 font-mono">
+            <span class="text-gray-400">Total: <strong class="text-brand-red text-sm">${formatIDR(t.total)}</strong></span>
+            <span class="text-gray-400 text-[11px]">Uang Diterima: ${formatIDR(t.cashPaid)} | Kembali: ${formatIDR(t.cashChange)}</span>
+          </div>
+        </div>
+      `).join("");
+
+      observeScrollAnimations();
+    }
+
+    function setReportPeriod(p) {
+      state.reportPeriod = p;
+      document.querySelectorAll(".report-period-btn").forEach(b => {
+        b.classList.toggle("bg-brand-red", b.dataset.period === p);
+        b.classList.toggle("text-white", b.dataset.period === p);
+        b.classList.toggle("text-gray-400", b.dataset.period !== p);
+      });
+      renderReportsView();
+    }
+
+    function exportToCSV() {
+      const txs = getTransactions();
+      if (!txs.length) return alert("Belum ada data.");
+      let csv = "ID,Tanggal,Waktu,Pelanggan,Meja,Total,Metode\n";
+      txs.forEach(t => {
+        csv += `"${t.id}","${t.date}","${t.time}","${t.customer}","${t.table}",${t.total},"${t.paymentMethod}"\n`;
+      });
+      const blob = new Blob([csv], { type: "text/csv" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = `LAPORAN_KYARO_${new Date().toISOString().slice(0,10)}.csv`;
+      a.click();
+    }
+
+    function resetAllTransactions() {
+      if (confirm("Reset seluruh data laporan untuk shift baru?")) {
+        saveTransactions([]);
+        renderReportsView();
+        showToast("Laporan berhasil direset");
+      }
+    }
+
+    // 10. ADMIN NOTES & STOCK MANAGEMENT
+    function renderAdminNotes() {
+      const notes = getNotes();
+      const grid = document.getElementById("adminNotesGrid");
+      grid.innerHTML = notes.map(n => `
+        <div class="glass-panel p-4 rounded-2xl space-y-2 border-l-4 border-brand-orange text-xs">
+          <div class="flex justify-between text-gray-400 text-[10px]">
+            <span class="font-bold uppercase text-brand-orange">${n.cat}</span>
+            <span>${n.time}</span>
+          </div>
+          <h4 class="font-bold text-white text-sm">${n.title}</h4>
+          <p class="text-gray-300 leading-relaxed">${n.content}</p>
+        </div>
+      `).join("");
+    }
+
+    function openNewNoteModal() {
+      document.getElementById("adminNoteModal").classList.remove("hidden");
+    }
+
+    function saveAdminNote() {
+      const title = document.getElementById("noteTitleInput").value;
+      const cat = document.getElementById("noteCatInput").value;
+      const content = document.getElementById("noteContentInput").value;
+      if (!title || !content) return alert("Isi lengkap catatan!");
+
+      const notes = getNotes();
+      notes.unshift({ id: Date.now().toString(), title, cat, content, time: new Date().toLocaleTimeString("id-ID") });
+      saveNotes(notes);
+      closeModal("adminNoteModal");
+      renderAdminNotes();
+      showToast("Catatan disimpan");
+    }
+
+    function renderStockToggles() {
+      const stock = getStock();
+      const list = document.getElementById("stockToggleList");
+      list.innerHTML = MENU_ITEMS.map(i => {
+        const isAvail = stock[i.id] !== false;
+        return `
+          <div class="flex items-center justify-between p-3 rounded-2xl bg-brand-surface border border-white/5 text-xs">
+            <span class="font-bold text-white">${i.name}</span>
+            <button onclick="toggleStock('${i.id}')" class="px-3 py-1 rounded-full font-bold text-[10px] ${isAvail ? 'bg-emerald-950 text-emerald-400' : 'bg-red-950 text-red-400'}">
+              ${isAvail ? 'Tersedia ✓' : 'Habis ✕'}
+            </button>
+          </div>
+        `;
+      }).join("");
+    }
+
+    function toggleStock(id) {
+      const stock = getStock();
+      stock[id] = !(stock[id] !== false);
+      saveStock(stock);
+      renderStockToggles();
+      renderProducts();
+      showToast("Status stok menu diperbarui");
+    }
+
+    // 11. GENERAL NAVIGATION & OBSERVER
+    function switchTab(tab) {
+      document.querySelectorAll(".view-panel").forEach(p => p.classList.add("hidden"));
+      document.querySelectorAll(".nav-tab-btn").forEach(b => {
+        b.classList.remove("bg-brand-red", "text-white", "shadow-md");
+        b.classList.add("text-gray-400");
+      });
+
+      if (tab === "pos") {
+        document.getElementById("viewPos").classList.remove("hidden");
+        document.getElementById("tabBtn-pos").classList.add("bg-brand-red", "text-white", "shadow-md");
+        renderProducts();
+      } else if (tab === "reports") {
+        document.getElementById("viewReports").classList.remove("hidden");
+        document.getElementById("tabBtn-reports").classList.add("bg-brand-red", "text-white", "shadow-md");
+        renderReportsView();
+      } else if (tab === "admin-notes") {
+        document.getElementById("viewNotes").classList.remove("hidden");
+        document.getElementById("tabBtn-notes").classList.add("bg-brand-red", "text-white", "shadow-md");
+        renderAdminNotes();
+        renderStockToggles();
+      }
+      audio.beep();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    function filterCategory(cat) {
+      state.activeCategory = cat;
+      document.querySelectorAll(".cat-pill").forEach(p => {
+        p.classList.toggle("text-white", p.dataset.cat === cat);
+        p.classList.toggle("border-brand-red", p.dataset.cat === cat);
+      });
+      renderProducts();
+      audio.beep();
+    }
+
+    function closeModal(id) {
+      document.getElementById(id).classList.add("hidden");
+    }
+
+    // REVERSIBLE SCROLL OBSERVER (Scroll down = show, Scroll up = reset)
+    function observeScrollAnimations() {
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add("is-visible");
+          } else {
+            // KUNCI ANIMASI REVERSIBLE: Hapus class saat elemen keluar layar
+            entry.target.classList.remove("is-visible");
+          }
+        });
+      }, { threshold: 0.08 });
+
+      document.querySelectorAll(".ios-scroll-item").forEach(el => observer.observe(el));
+    }
+
+    // INIT
+    window.addEventListener("DOMContentLoaded", () => {
+      renderProducts();
+      renderCart();
+      updateReportBadge();
+      document.getElementById("currentOrderId").textContent = generateOrderId();
+
+      // Clock
+      setInterval(() => {
+        const d = new Date();
+        document.getElementById("liveDateText").textContent = d.toLocaleDateString("id-ID", { day: '2-digit', month: 'short', year: 'numeric' });
+        document.getElementById("liveTimeText").textContent = d.toLocaleTimeString("id-ID") + " WIB";
+      }, 1000);
+
+      // Search listener
+      document.getElementById("menuSearchInput").addEventListener("input", (e) => {
+        state.searchQuery = e.target.value.toLowerCase().trim();
+        renderProducts();
+      });
+
+      // Keyboard Shortcut F4 & Escape
+      window.addEventListener("keydown", (e) => {
+        if (e.key === "F4") {
+          e.preventDefault();
+          const btn = document.getElementById("btnProcessPayment");
+          if (!btn.disabled) openPaymentModal();
+        }
+        if (e.key === "Escape") {
+          document.querySelectorAll(".modal-overlay, #paymentModal, #receiptModal, #adminNoteModal").forEach(m => m.classList.add("hidden"));
+        }
+      });
+    });
+  </script>
+</body>
+</html>

@@ -2521,7 +2521,6 @@ def run_selftest(master_seed: int = 2026) -> int:
     assert not bad_imports, f"Forbidden network imports found: {bad_imports}"
     print("[PASS 3/9] AST scan verified: 0 network/subprocess imports.")
 
-    # Collect all string literals from AST + all generated text across all 200 modules
     string_literals: List[str] = [
         node.value
         for node in ast.walk(tree)
@@ -2534,7 +2533,6 @@ def run_selftest(master_seed: int = 2026) -> int:
         generated_blobs.append(f"{m.id} {m.display_name} {m.blurb} {debrief} {ctx}")
     all_texts = string_literals + generated_blobs
 
-    # 4. IPv4 Regex scan: every IPv4 must be in RFC 1918 private or RFC 5737 doc ranges
     ip_regex = re.compile(r"\b(?:\d{1,3}\.){3}\d{1,3}\b")
     found_ips: List[str] = []
     for blob in all_texts:
@@ -2587,7 +2585,6 @@ def run_selftest(master_seed: int = 2026) -> int:
     assert repr(reg_a) == repr(reg_b), "Registry generation is not deterministic!"
     print("[PASS 8/9] Registry determinism verified: identical across repeated builds.")
 
-    # 9. Debrief determinism: rendering DEBRIEF twice for same module & seed -> identical
     for m_a, m_b in zip(reg_a, reg_b):
         deb_a = "\n".join(render_debrief_lines(m_a))
         deb_b = "\n".join(render_debrief_lines(m_b))
@@ -2619,7 +2616,6 @@ def parse_args(argv: Optional[Sequence[str]] = None) -> RuntimeConfig:
         seed=ns.seed,
         selftest=ns.selftest,
     )
-
 
 def main(argv: Optional[Sequence[str]] = None) -> int:
     global CFG
